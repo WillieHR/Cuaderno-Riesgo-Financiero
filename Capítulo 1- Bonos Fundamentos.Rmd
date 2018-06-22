@@ -1,0 +1,320 @@
+---
+title: "Capítulo 1 - Bono Fundamentos"
+author: "Willie Hernandez"
+date: "19/6/2018"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+El activo más sencillo para estudiar son los bonos debido a que el flujo de caja es predeterminado. Por lo tanto, es fácil traducir este flujo de caja a un valor presente por medio del la tasa "yield". Lo importante de este capítulo es poder comprender y usar intereses compuestos.
+
+Por simplicidad, en este capítulo se asumirá que la tasa de interés es constante y única para realizar un descuento a todos los bonos.
+
+# 1. Descontar; valor presente y futuro.
+
+Un inversor considera un bono cero cupon que paga \$100 yenes en 10 años. Se asume que la inversión está garantiazada por el gobierno americano y no tiene "default risk". Debido a que el pago ocurre en una fecha futura, la inversión tiene un menor que un "up-front" pago de \$100 yenes.
+
+Para valor el bono, se necesita __factor de descuento__, conocida también como __tasa de interés__ o más simplemente conocida como __"yield"__. Se define $C_t$ como el flujo de caja en $t=T$ años.$T$  es el número de periodos hasta la madurez del bono, también conocida como __tenor__.
+
+La función para encontrar el valor presente(PV) del bono es:
+
+```{r}
+PV_cero_cupon <- function(c,t,y){
+  return(c/(1+y)^t)
+}
+```
+
+Por ejemplo, un pago de \$100 yenes en 10 años a una tasa de descuento del 6% solo tiene un coste de \$55.84.
+
+```{r}
+PV_cero_cupon(c=100,t=10,y=0.06)
+```
+
+Esto explica porque el valor de un bono cero cupon decrece con el pasar de los años. Igualmente se puede observar que el valor del bono decrece cuando el "yield" aumenta. 
+
+Despejando la ecuación se puede definicar el valor futuro del bono.
+
+```{r}
+FV_cero_cupon <- function(PV,t,y){
+  return(PV*(1+y)^t)
+}
+```
+
+Comprobemos nuestro ejemplo anterior.
+
+```{r}
+FV_cero_cupon(PV=55.84,t=10,y=0.06)
+```
+
+__ effective annual rate(EAR):__ la tasa efectiva anual es la tasa de interés que calcula el costo o valor de interés esperado en un plazo de un año. Ya sea calculado en base a un año de 360 o 365 días. Generalmente, las tasas de interés son EAR en el mercado financiero a menos de que se especifique lo contrario.
+
+Una tasa de interés se puede expresar compuesta anualmente (EAR), semestralmente, mensualmente, etc. Una fórmula general que se usa para expresar el valor de la tasa de interés es la siguiente.
+
+$$ PV = \dfrac{C_t}{(1 + y/m)^{mt}}$$
+donde $m$ representa a que nivel esta compuesta. Por ejemplo, en el caso de semestralmente $m=2$, en el caso mensual $m=12$, etc. 
+
+Generamos, dos funciones en R que permitan calcular el PV y FV de este flujo de caja.
+
+```{r}
+PV_cero_cupon_compuesto <- function(c,y,m,t){
+  return(c/(1+y/m)^(m*t))
+}
+
+FV_cero_cupon_compuesto <- function(PV,y,m,t){
+  return(PV*(1+y/m)^(m*t))
+}
+```
+
+Cuando se considera el caso continuo, es decir, $m -> inf$, la fórmula se transforma facilmente a,
+
+$$PV = C*e^{yt}$$
+
+Se puede observar que a medida que la frecuencia aumenta, el valor presenta incrementa.
+
+__Ejemplo 1:__ Asuma una tasa compuesta semianual del 8%. ¿Cuál es el equivalente EAR?
+
+$$(1 + y_{semi}/m)^{mt} = (1 + y_{year})^{t}$$
+
+```{r}
+(1 + 0.08/2)^(2) - 1
+```
+
+__ Ejemplo 2:__ Asuma una tasa compuesta continuamente del 10%. ¿Cuál es el equivalente si se quiere expresar semestralmente?
+
+$$(1 + y_{semi}/m)^{mt} = e^{y_{conti}t}$$
+```{r}
+((exp(0.1))^(1/2) - 1)*2
+```
+
+# Relacion entre el "yield" y el precio de un bono
+
+Un típico bono está formado por el pago de cupones con cierta frecuencia y finaliza con el pago del principal o "face-value". Si se define $c$ como el "rate" del cupon y "F" como el "face-value". Se puede ver fácilmnete que la valoración del bono es:
+
+$$ PV = \sum_{t=1}^{T}\dfrac{cF}{(1+y)^t} + \dfrac{F}{(1+y)^t}$$
+__par bond:__ cuando el cupon $c$ coincide con el yield, el valor presente de bono es igual al "face-value", y se dice que el bono está a la par.
+
+__ejemplo:__ Considere un bono que paga \$100 en 10 años y un cupon anual del 6%. ¿Qué pasa con el valor del bono si el "yield" cae de 6% a 5%?
+
+```{r}
+PV_bono_cupon <- function(c,F,y,t){
+  PV = 0
+  for(i in 1:t){
+    PV = PV + (c*F)/(1+y)^i
+  }
+  PV = PV + F/(1+y)^t
+  return(PV)
+}
+
+```
+
+```{r}
+PV_bono_cupon(c = 0.06,F=100,y = 0.06,t=10)
+PV_bono_cupon(c = 0.06,F=100,y = 0.05,t=10)
+
+```
+Se puede observar que al reducir el "yield", el bono se valorizo un 8%. Por tanto, se puede establecer una relación NO LINEAL negativa entre el "yield" y el PV del bono.
+
+__ejemplo 3:__ Un bono tiene un precio de \$102.9, tiene un año para madurez y está pagando un cupon de 8%. Asuma que el cupon es pagado semestralmente. ¿Cuál es el "yield" del bono?
+
+$$ 102.9 = \dfrac{0.04* 100}{(1+y/2)^{1}}+ \dfrac{0.04*100}{(1+y/2)^{2}}+\dfrac{100}{(1+y/2)^{2}}$$
+
+Para encontrar el $y$ o "yield" se usará un método numérico conocido como el método de bisección.
+
+```{r}
+# Halla la raíz de f (una función definida en R) en el intervalo [a,b]
+biseccion <- function(f,a,b) {
+plot(f,from=a,to=b) # Grafico la función y
+abline(h=0,col="blue") # pinto el eje-X de color azul.
+
+# Definimos los valores iniciales de m, n y un 'error'
+# que mide la amplitud del intervalo sobre el que trabajamos.
+m = (a+b)/2 ; n = 0; error<-abs(a-b)/2
+
+while (error > 1.e-5 & n < 100) { # "Doble-tolerancia" del método
+n<-n+1
+if (f(m) == 0) break # Si el cero esta en el medio de [a,b] paro.
+if (f(m)*f(a) < 0) {b = m} else {a = m} # La regla antes planteada.
+m = (a+b)/2 # Redefino el intervalo con los valores actualizados.
+
+# Genero output gráfico y en pantalla del método:
+text(m,0,n,cex=0.8,col="red")
+error = abs(a-b)/2
+cat("X=",m,"\tE=",error,"\n")
+                                 } # Fin del while()
+}# Fin de la función biseccion().
+
+```
+
+Expresamos la función para luego introducirla en la función anterior y encontrar la solución al ejercicio propuesto.
+
+```{r}
+f <-function(y){
+  return((4/(1 + y/2)) + (4/(1 + y/2)^2) + (100/(1 + y/2)^2) - 102.9)
+}
+
+biseccion(f,0,0.1)
+```
+Se puede observar que la raiz o el "yield" que satisface la ecuación es cercano a 0.05.
+
+__Pregunta Teórica:__ Un bono corporativo que paga un cupon anual del 8% es vendida a un precio que refleja el "yield" a madurez de un 6%. Un año ha pasado y la tasa de interés se mantiene igual. ¿Qué pasa con el precio del bono?
+
+_Dado que el bono se vendio con un tasa cupon más alta que el "yield", el bono se vendio a "premium". Por lo tanto, como el bono converge a su "Face-value", se puede afirmar que el precio del bono ha reducido conforme al año pasado._
+
+# Propidades marginales de un bono
+
+La primera derivado del PV de un bono con respecto al "yield" tiene como nombre __duración del bono__.
+
+$$\dfrac{\partial PV}{\partial y} = -D^{*} P_0$$
+donde $D^*$ es llamada la duración modificada y $P_0$ es el precio del mercado del bono.
+
+$$DD = D^{*} P_0$$
+
+Un concepto interesante y utilizada es la duración del bono con respecto al cambio de un punto básico, es decir, la centesima parte de un 1%, este cambio se conoce igualmente como __DV01__.
+
+$$DVBP = DD*\Delta y=[D^*P_0]0.0001.$$
+La segunda derivada es la convexidad.
+
+$$\dfrac{\partial^2 PV}{\partial^2 y} = C P_0$$
+Para un bono cero cupon se puede obtener la duración de la siguiente manera:
+
+$$\dfrac{\partial PV}{\partial y} = \dfrac{\partial}{\partial y}\left[  \dfrac{F}{(1+y)^{T+1}}\right]= -\dfrac{T}{(1+y)}PV$$
+La duración modificada es la medida apropiada para entender el riesgo frente a la tasa de interés.
+
+Si obtenemos ahora la convexidad.
+
+$$\dfrac{\partial^2 PV}{\partial^2 y} =-(T+1)(-T)\dfrac{F}{(1+y)^{T+2}} = \dfrac{(T+1)T}{(1+y)^2}PV.$$
+Para tener una aproximación del cambio en el precio de un bono cero cupón frente a cambios en la tasa de interés, podemos usar la expasión de taylor haciendo uso de la duración y la convexidad del bono.
+
+$$ \Delta PV = -[D^*PV](\Delta y) + \dfrac{1}{2}[C*PV](\Delta y)^2$$
+__ejemplo__ Considere un bono cero cupón con un "yield" de 6%. Un bono de tesoro tiene un "yield" semestral. El valor presente del bono es:
+
+```{r}
+100/(1 + 0.06/2)^20
+```
+Para este bono la duración modificada es de 
+
+```{r}
+20/(1+0.06/2)
+```
+semestres. Hay que tener cuidado que si el tiempo se mide en semestres, la duración también queda en semestres. Si se quiere hallar la duración anual solamente se divide en 2, para un resultado de 9.71 años. La convesidad es
+
+```{r}
+21*20/(1+0.06/2)^2
+```
+semestres cuadrados. Para hallar la duración anual, se saca la raiz se divide en 2 y luego se eleva al cuadrado.
+```{r}
+(sqrt(395.89)/2)^2
+```
+
+
+Se desea realizar una aproximación del cambio en el balor del bono si el "yield" cambia positivamente un 7%.
+
+```{r}
+-(9.71*55.37)*(0.01) + 0.5*(98.97*55.37)*(0.01)^2
+```
+
+__Nota:__ cuando se evalua el cambio porcentual de un "yield" se puede usar solamente la ecuación de la duración; sin embargo, esta ecuación ignora la no linealidad de la fórmula. Por lo tanto, para lograr encontrar un efecto más exacto, se utiliza la convexidad para corregir la no linealidad de la fórmula.
+
+__Ejemplo 5__ Un bono cero cupón tiene una madurez de 10 años y tiene una tasa "yield" del 10%. ¿Cuál es un valor aproximada por la duración modificada?
+
+```{r}
+T = 10
+y = 0.1
+
+T/(1+y)
+```
+
+__Ejemplo 6__ El administrador de un portafolio tiene un bono con PV de 100 millones. La posición tiene una duración modificada de 8 años y una convexidad de 150 años. ¿Si hay un incremento de 25 puntos básicos, aproximadamente cuánto cambia el valor del bono?
+
+```{r}
+(-8*100)*(0.0025) + (0.5)*(150*100)*(0.0025)^2
+```
+
+__Ejemplo 7:__ Un administrador de portafolio estima que el valor de su bono es 125.482 millones. Ella estima que el valor del portafolio incrementaria a $127.723 milones si los interes caen 30 puntos básicos y el valor del portafolio se reduciría a 122.164 millones si las tasas de interes se incrementan 30 puntos básicos.¿Cuál sería al duración efectiva del bono?
+
+$$ D^{E} = \dfrac{P_{-}-P_{+}}{2P_0\Delta y}$$
+
+```{r}
+(127.723 - 122.164)/(125.482*0.006)
+```
+__Duración de Macaulay:__ La duraciónde un bono es la meida del vencimiento de todos los flujos de caja de ese bono, es decir, expresa en años cuánto tiempo tardarán los flujos de caja de ese bono en ser pagados. En el caso de los onos sin cupón, la duración del bono coincidirá exactamente con la duración temporal del bono.
+
+$$DuracionMacauylay = \dfrac{\sum_{t=1}^{n}\dfrac{t*C}{(1+y)^t}+ \dfrac{n*F}{(1+y)^n}}{PV}$$
+Realizemos la fórmula en R,
+
+```{r}
+D_Macaulay <- function(c,F,y,t){
+  numerador = 0
+  denominador = PV_bono_cupon(c,F,y,t)
+  for(i in 1:t){
+    numerador = numerador + (i*c*F)/(1+y)^i
+  }
+  numerador = numerador + t*F/(1+y)^t
+  return(numerador/denominador)
+}
+
+```
+
+Por ejemplo, supongamos un bono cupón del 6% anual con un "tenor" de 10 años y un "yield" de 6% anual.
+```{r}
+D_Macaulay(c=0.06,F=100,y =0.06, t = 10)
+```
+
+Esto nos quiere decir que este bono cupón es equivalente a un bono cero cupón con madurez de 7.8 años.
+
+Finalmente, la duración modificada para un bono no cero cupón sería.
+
+$$DuracionModificada = \dfrac{DuracionMacaulay}{(1+y)}$$
+
+__Ejemplo 8:__ Suponga que el "face-value" de unbono es 1000 USD tiene un "tenor" de 3 años y el cupón anual de 10%. El "yield" es de 5%.¿Cuál es la duración modificada de este bono?
+
+```{r}
+D_Macaulay(c=0.1,F=100,y =0.05, t = 3)/(1+0.05)
+```
+
+__Ejemplo 9:__ Un bono de tesor con un cupón anual del 6%(los cupones son semestrales) y un "yield" de 4% compuesto semestralmente. El bono madura en 18 meses y el siguiente cupón será pagado en 6 meses. ¿Cuál es la duración de Macaulay?
+```{r}
+D_Macaulay(c=0.03,F=100,y =0.04, t = 3)
+```
+Si se puede observar, los datos ingresados en la fórmula fueron semestrales y la duración se expresa en años. Por tanto, se divide el valor en 2.
+
+```{r}
+2.912133/2
+```
+
+# Duración y convexidad del portafolio
+
+Cuando uno se encuentra en el mundo real, un administrador de portafolio no solo cuenta con un bono sino con varios dentro del mismo portafolio. Un administrador agrega la duración y la convexidad a través de todo el portafolio.
+
+Para enteder la duración del portafolio, se realiza solamente una sumatoria ponderada de la siguiente manera. Sea $D_i^*$ y $PV_i$ la duración y el valor presente del í-esimo activo del portafolio, entonces, la duración y el valor presente del portafolio está definido como:
+
+$$D^{*}_{p}PV_p=\sum_{i=1}^{N}x_iD_i^*PV_i$$ 
+
+donde $x_i$ represente el número de unidades del í-esimo bono en el portafolio. La relación se mantiene si se desea encontrar la convexidad del portafolio. Igualmente, se recuerda que el valor presente del portafolio es sencillamente la suma ponderada de los componentes individuales.
+
+$$PV_p = \sum_{i=1}^{N}x_iPV_i$$
+los pesos,
+
+$$\omega_i = x_i\dfrac{P_i}{P_p}$$
+
+Dada la lógica anterior se pueden establecer las siguientes relaciones,
+
+$$D^*_p = \sum_{i=1}^{N}\omega_iD^*_i$$
+$$C_p = \sum_{i=1}^{N}\omega_iC_i$$
+
+__Ejemplo 9:__ Un portafolio tiene las siguientes posiciones:
+
+ + Portafolio A: precio $90.000, duración modificada de 2.5, posición larga en 8 bonos. 
+ + Portafolio B: precio $110.000, duración modificada de 3, posición corta en 6 bonos.  
+ + Portafolio C: precio $120.000, duración modificada de 3.3, posición larga en 12 bonos.
+ 
+ Todos los interes son del 10%, Si las tasas de interés suben 25 puntos básicos, ¿Cuánto disminuye el valor del portafolio?
+ 
+Para este ejercicio, se usará las siguientes fórmulas,
+$$D^{*}_{p}PV_p=\sum_{i=1}^{N}x_iD_i^*PV_i$$ 
+$$ \Delta PV = -[D^*PV](\Delta y)$$
+```{r}
+(-1)*(8*2.5*90000 - 6*3*110000 + 3.3*12*120000)*(0.0025)
+```
+# Formulas Importantes
